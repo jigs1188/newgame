@@ -7,6 +7,16 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  svgContainer: {
+    flex: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  controlsContainer: {
+    flex: 1,
+    justifyContent: "flex-start",
+    marginTop: 20,
+  },
   // Other styles remain unchanged
   authContainer: {
     flex: 1,
@@ -32,6 +42,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 250,
   },
   inputBox: {
     borderWidth: 1,
@@ -41,6 +52,9 @@ export const styles = StyleSheet.create({
   },
   gameMessage: {
     marginTop: 10,
+  },
+  buttonSpacing: {
+    margin: 10,
   },
   gameControls: {
     marginVertical: 20,

@@ -16,10 +16,18 @@ import Svg, {
   Defs,
   Marker,
   Path,
+  Polyline,
+  
+  Polygon,
 } from "react-native-svg";
+import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
 import graphData from "./assets/graph.json";
 import { calculateOptimalPath } from "./Algorithms";
 import { styles } from "./Style";
+import { Modal, ScrollView } from 'react-native';
+
 // import Login from "./Login";
 
 
@@ -45,6 +53,9 @@ const Graph = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teacherOperation, setTeacherOperation] = useState("sum"); // 'sum' | 'multiplication'
   const [weightType, setWeightType] = useState("integer");
+
+  const [teacherGraphContent, setTeacherGraphContent] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     loadLevel(0); // Initial load when component mounts
@@ -309,8 +320,93 @@ const Graph = () => {
     setCurrentLevel(0);
   };
 
+ /// New helper function to copy the built-in graph to a teacher file.
+  const copyDefaultGraph = async () => {
+    try {
+      const defaultGraphString = JSON.stringify(graphData, null, 2);
+      const teacherGraphUri = FileSystem.documentDirectory + 'teacherGraph.json';
+      await FileSystem.writeAsStringAsync(teacherGraphUri, defaultGraphString, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      Alert.alert("Default Graph Copied", "Default graph saved as teacherGraph.json");
+    } catch (err) {
+      Alert.alert("Error", "Could not copy default graph: " + err.message);
+    }
+  };
+
+  // New helper function to save the current teacher graph as a JSON file.
+  const saveTeacherGraphAsJson = async () => {
+    const teacherGraphToSave = {
+      nodes,
+      edges,
+      startNode,
+      endNode,
+      currentLevel,
+    };
+    const jsonString = JSON.stringify(teacherGraphToSave, null, 2);
+    const teacherGraphUri = FileSystem.documentDirectory + 'teacherGraph.json';
+    try {
+      await FileSystem.writeAsStringAsync(teacherGraphUri, jsonString, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(teacherGraphUri);
+      } else {
+        Alert.alert("Graph Saved", "Teacher graph saved at " + teacherGraphUri);
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not save teacher graph: " + err.message);
+    }
+  };
+
+  // New helper function to load a graph from a JSON file.
+  const loadGraphFromJson = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: "application/json" });
+      if (result.type === 'success') {
+        const fileContent = await FileSystem.readAsStringAsync(result.uri, { encoding: FileSystem.EncodingType.UTF8 });
+        const loadedGraph = JSON.parse(fileContent);
+        setNodes(loadedGraph.nodes);
+        setEdges(loadedGraph.edges);
+        setStartNode(loadedGraph.startNode);
+        setEndNode(loadedGraph.endNode);
+        setCurrentLevel(loadedGraph.currentLevel || 0);
+        Alert.alert("Graph Loaded", "Graph loaded successfully.");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not load graph: " + err.message);
+    }
+  };
+  const viewTeacherGraph = async () => {
+    const teacherGraphUri = FileSystem.documentDirectory + 'teacherGraph.json';
+    try {
+      const info = await FileSystem.getInfoAsync(teacherGraphUri);
+      if (info.exists) {
+        const content = await FileSystem.readAsStringAsync(teacherGraphUri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        Alert.alert("Teacher Graph Content", content);
+      } else {
+        Alert.alert("Not Found", "teacherGraph.json does not exist yet.");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not read teacher graph: " + err.message);
+    }
+  };
   return (
     <View style={styles.container}>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={{ flex:1, padding:20 }}>
+          <ScrollView>
+            <Text style={{ fontSize:12 }}>{teacherGraphContent}</Text>
+          </ScrollView>
+          <Button title="Close" onPress={() => setModalVisible(false)} />
+        </View>
+      </Modal>
       {!mode ? (
         // Mode Selection Screen
         <View style={styles.homeContainer}>
@@ -323,61 +419,61 @@ const Graph = () => {
         // Game Screen
         <>
           <Svg width="400" height="300" style={styles.gameContainer}>
-            {edges.map((edge, index) => {
-              const startNodeObj = nodes.find((n) => n.id === edge.from);
-              const endNodeObj = nodes.find((n) => n.id === edge.to);
-              const midX = (startNodeObj.x + endNodeObj.x) / 2;
-              const midY = (startNodeObj.y + endNodeObj.y) / 2;
-
-              // Compute the angle for the arrow text in degrees.
-              const dx = endNodeObj.x - startNodeObj.x;
-              const dy = endNodeObj.y - startNodeObj.y;
-              const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-              
-              const strokeColor = (cycleEdges || []).some(
-                (ce) => ce.from === edge.from && ce.to === edge.to
-              )
-                ? "red"
-                : isEdgeSelected(edge.from, edge.to)
-                ? "green"
-                : "yellow";
-
-              return (
-                <React.Fragment key={index}>
-                  <Line
-                    x1={startNodeObj.x}
-                    y1={startNodeObj.y}
-                    x2={endNodeObj.x}
-                    y2={endNodeObj.y}
-                    stroke={strokeColor}
-                    strokeWidth={strokeColor === "green" ? "3" : "2"}
-                  />
-                  {/* Display the edge weight above the line */}
-                  <SvgText
-                    x={midX}
-                    y={midY - 10}
-                    fill="black"
-                    fontSize="10"
-                    fontWeight="bold"
-                  >
-                    {edge.weight}
-                  </SvgText>
-                  {/* Display the direction as an arrow ("→") rotated along the edge */}
-                  <SvgText
-                    x={midX}
-                    y={midY}
-                    fill="black"
-                    fontSize="12"
-                    fontWeight="bold"
-                    transform={`rotate(${angle}, ${midX}, ${midY})`}
-                  >
-                    →
-                  </SvgText>
-                </React.Fragment>
-              );
-            })}
-
+          {edges.map((edge, index) => {
+  const startNodeObj = nodes.find((n) => n.id === edge.from);
+  const endNodeObj = nodes.find((n) => n.id === edge.to);
+  
+  const strokeColor = (cycleEdges || []).some(
+    (ce) => ce.from === edge.from && ce.to === edge.to
+  )
+    ? "red"
+    : isEdgeSelected(edge.from, edge.to)
+    ? "green"
+    : "yellow";
+  
+  // Calculate the angle in radians and degrees from start to end
+  const angleRad = Math.atan2(
+    endNodeObj.y - startNodeObj.y,
+    endNodeObj.x - startNodeObj.x
+  );
+  const angleDeg = (angleRad * 180) / Math.PI;
+  
+  // Positioning: previous code used the arrow tip as reference.
+  // Now, we use the midpoint so that arrow with tail is centered.
+  const midX = (startNodeObj.x + endNodeObj.x) / 2;
+  const midY = (startNodeObj.y + endNodeObj.y) / 2;
+  
+  return (
+    <React.Fragment key={index}>
+      <Line
+        x1={startNodeObj.x}
+        y1={startNodeObj.y}
+        x2={endNodeObj.x}
+        y2={endNodeObj.y}
+        stroke={strokeColor}
+        strokeWidth={strokeColor === "green" ? "3" : "2"}
+      />
+      <SvgText
+        x={midX}
+        y={midY -13}
+        fill="black"
+        fontSize="18"
+        textAnchor="middle"
+        fontWeight="bold"
+      >
+        {edge.weight}
+      </SvgText>
+      {/* Draw a custom arrow with tail, centered at the edge midpoint */}
+      <Polygon 
+        // The points below draw an arrow with a tail.
+        // The tip is at (10,0); the shape extends leftward (negative x).
+        points="10,0 0,-5 0,-2 -15,-2 -15,2 0,2 0,5"
+        fill="silver"
+        transform={`translate(${midX},${midY}) rotate(${angleDeg})`}
+      />
+    </React.Fragment>
+  );
+})}
             {nodes.map((node) => (
               <Circle
                 key={node.id}
@@ -396,7 +492,7 @@ const Graph = () => {
                 onPress={() => handleNodeClick(node.id)}
               />
             ))}
-            {nodes.map((node) => (
+            {/* {nodes.map((node) => (
               <SvgText
                 key={node.id + "-label"}
                 x={node.x}
@@ -407,8 +503,9 @@ const Graph = () => {
               >
                 {node.id}
               </SvgText>
-            ))}
+            ))} */}
           </Svg>
+          
           {mode === "teacher" && !gameOver && (
             <View style={styles.teacherControls}>
               <TextInput
@@ -426,9 +523,9 @@ const Graph = () => {
                 onChangeText={(text) => setMaxWeight(text)}
               />
               {/* Show current path weight */}
-              <Text style={styles.gameMessage}>
+              {/* <Text style={styles.gameMessage}>
                 Current Path Weight: {totalWeight}
-              </Text>
+              </Text> */}
               <Button
                 title="Generate New Weights"
                 onPress={generateRandomEdges}
@@ -462,8 +559,15 @@ const Graph = () => {
                 title="Fix Negative Cycles"
                 onPress={handleNegativeCycleAdjustment}
               />
+            {/* New buttons for handling teacher graph */}
+    {/* <Button title="Copy Default Graph" onPress={copyDefaultGraph} />
+    <Button title="Save Teacher Graph" onPress={saveTeacherGraphAsJson} />
+    <Button title="Load Graph" onPress={loadGraphFromJson} />
+    <Button title="View Teacher Graph" onPress={viewTeacherGraph} /> */}
             </View>
           )}
+
+
 
           <Text style={styles.gameMessage}>{message}</Text>
           {gameOver && (
@@ -474,10 +578,15 @@ const Graph = () => {
               />
             </View>
           )}
+
+<Text style={styles.gameMessage}>
+                Current Path Weight: {totalWeight}
+              </Text>
           {/* <View style={styles.button}> */}
           <Button title="Undo" onPress={undo} />
           <Button title="Check Path" onPress={checkPath} />
           <Button title="Reset Graph" onPress={resetGraph} />
+          
           {/* </View> */}
         </>
       )}
