@@ -1,25 +1,8 @@
 
 import React, { useState, useEffect } from 'react'; // <-- Combine imports
-
-import {
-  View,
-  Text,
-  Button,
-  Alert,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
-import Svg, {
-  Circle,
-  Line,
-  Text as SvgText,
-  Defs,
-  Marker,
-  Path,
-  Polyline,
-  
-  Polygon,
-} from "react-native-svg";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, Button, Alert, TextInput, TouchableOpacity } from "react-native";
+ import Svg, { Circle, Line, Text as SvgText, Defs, Marker, Path, Polyline, Polygon } from "react-native-svg";
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
@@ -27,10 +10,9 @@ import graphData from "./assets/graph.json";
 import { calculateOptimalPath } from "./Algorithms";
 import { styles } from "./Style";
 import { Modal, ScrollView } from 'react-native';
-
+import TeacherQuizScreen from "./TeacherQuizScreen";
+import QRScannerScreen from "./QRScannerScreen";
 // import Login from "./Login";
-
-
 
 const Graph = () => {
   const [nodes, setNodes] = useState([]);
@@ -56,6 +38,104 @@ const Graph = () => {
 
   const [teacherGraphContent, setTeacherGraphContent] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+// Quiz state
+const [assignedQuiz, setAssignedQuiz] = useState(null);
+// To decide whether to show QR scanner in student mode
+const [isQuizScanned, setIsQuizScanned] = useState(false);
+// To toggle teacher quiz management UI
+const [showTeacherQuizManager, setShowTeacherQuizManager] = useState(false);
+// Quiz-related states
+// const [assignedQuiz, setAssignedQuiz] = useState(null);
+const [showQRScanner, setShowQRScanner] = useState(false);
+const [gameProgress, setGameProgress] = useState({
+  level: 0,
+  score: 0,
+  currentGraph: null
+});
+
+useEffect(() => {
+  loadSavedProgress();
+  initializeGraph();
+}, []);
+
+const initializeGraph = () => {
+  if (assignedQuiz) {
+    loadQuizGraph(assignedQuiz);
+  } else {
+    loadLevel(currentLevel);
+  }
+};
+
+const loadSavedProgress = async () => {
+  try {
+    const savedProgress = await AsyncStorage.getItem('gameProgress');
+    if (savedProgress) {
+      const progress = JSON.parse(savedProgress);
+      setGameProgress(progress);
+      if (progress.currentGraph) loadQuizGraph(progress.currentGraph);
+    }
+  } catch (error) {
+    console.log('Error loading progress:', error);
+  }
+};
+
+const saveProgress = async () => {
+  try {
+    const progress = {
+      level: currentLevel,
+      score: totalWeight,
+      currentGraph: assignedQuiz || gameProgress.currentGraph
+    };
+    await AsyncStorage.setItem('gameProgress', JSON.stringify(progress));
+  } catch (error) {
+    console.log('Error saving progress:', error);
+  }
+};
+
+
+
+
+const loadQuizGraph = (quiz) => {
+  setNodes(quiz.nodes);
+  setEdges(quiz.edges);
+  setStartNode(quiz.startNode);
+  setEndNode(quiz.endNode);
+  setLastClickedNode(quiz.startNode);
+  setTotalWeight(0);
+  setSelectedEdges([]);
+  setGameOver(false);
+  setMessage("");
+};
+
+const handleModeToggle = (newMode) => {
+  setMode(newMode);
+  if (newMode === 'student') {
+    setShowQRScanner(false);
+    initializeGraph();
+  }
+};
+
+const handleQuizAssigned = (quiz) => {
+  setAssignedQuiz(quiz);
+  saveProgress();
+  Alert.alert("Quiz Assigned", "Students can now scan the QR code to access this quiz");
+};
+
+const handleQRScan = (data) => {
+  try {
+    const quiz = JSON.parse(data);
+    setAssignedQuiz(quiz);
+    loadQuizGraph(quiz);
+    setShowQRScanner(false);
+    saveProgress();
+  } catch (error) {
+    Alert.alert("Invalid QR Code", "Please scan a valid quiz code");
+  }
+};
+
+useEffect(() => {
+  if (!assignedQuiz) loadLevel(0);
+}, [assignedQuiz]);
 
   useEffect(() => {
     loadLevel(0); // Initial load when component mounts
@@ -117,6 +197,30 @@ const Graph = () => {
       setCurrentLevel(level);
     } else {
       setMessage("Congratulations! All levels completed.");
+    }
+  };
+  const handleAssignQuiz = (quizGraph) => {
+    setAssignedQuiz(quizGraph);
+    Alert.alert("Quiz Assigned", "Quiz saved and ready to share via QR code");
+  };
+
+  const handleScanComplete = (data) => {
+    try {
+      const quiz = JSON.parse(data);
+      setAssignedQuiz(quiz);
+      setIsQuizScanned(true);
+      // Load quiz as the game graph
+      setNodes(quiz.nodes);
+      setEdges(quiz.edges);
+      setStartNode(quiz.startNode);
+      setEndNode(quiz.endNode);
+      setLastClickedNode(quiz.startNode);
+      setTotalWeight(0);
+      setSelectedEdges([]);
+      setGameOver(false);
+      setMessage("");
+    } catch (err) {
+      Alert.alert("Scan Error", "Invalid QR code data. Please try again.");
     }
   };
 
@@ -320,160 +424,102 @@ const Graph = () => {
     setCurrentLevel(0);
   };
 
- /// New helper function to copy the built-in graph to a teacher file.
-  const copyDefaultGraph = async () => {
-    try {
-      const defaultGraphString = JSON.stringify(graphData, null, 2);
-      const teacherGraphUri = FileSystem.documentDirectory + 'teacherGraph.json';
-      await FileSystem.writeAsStringAsync(teacherGraphUri, defaultGraphString, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      Alert.alert("Default Graph Copied", "Default graph saved as teacherGraph.json");
-    } catch (err) {
-      Alert.alert("Error", "Could not copy default graph: " + err.message);
-    }
-  };
-
-  // New helper function to save the current teacher graph as a JSON file.
-  const saveTeacherGraphAsJson = async () => {
-    const teacherGraphToSave = {
-      nodes,
-      edges,
-      startNode,
-      endNode,
-      currentLevel,
-    };
-    const jsonString = JSON.stringify(teacherGraphToSave, null, 2);
-    const teacherGraphUri = FileSystem.documentDirectory + 'teacherGraph.json';
-    try {
-      await FileSystem.writeAsStringAsync(teacherGraphUri, jsonString, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(teacherGraphUri);
-      } else {
-        Alert.alert("Graph Saved", "Teacher graph saved at " + teacherGraphUri);
-      }
-    } catch (err) {
-      Alert.alert("Error", "Could not save teacher graph: " + err.message);
-    }
-  };
-
-  // New helper function to load a graph from a JSON file.
-  const loadGraphFromJson = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({ type: "application/json" });
-      if (result.type === 'success') {
-        const fileContent = await FileSystem.readAsStringAsync(result.uri, { encoding: FileSystem.EncodingType.UTF8 });
-        const loadedGraph = JSON.parse(fileContent);
-        setNodes(loadedGraph.nodes);
-        setEdges(loadedGraph.edges);
-        setStartNode(loadedGraph.startNode);
-        setEndNode(loadedGraph.endNode);
-        setCurrentLevel(loadedGraph.currentLevel || 0);
-        Alert.alert("Graph Loaded", "Graph loaded successfully.");
-      }
-    } catch (err) {
-      Alert.alert("Error", "Could not load graph: " + err.message);
-    }
-  };
-  const viewTeacherGraph = async () => {
-    const teacherGraphUri = FileSystem.documentDirectory + 'teacherGraph.json';
-    try {
-      const info = await FileSystem.getInfoAsync(teacherGraphUri);
-      if (info.exists) {
-        const content = await FileSystem.readAsStringAsync(teacherGraphUri, {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
-        Alert.alert("Teacher Graph Content", content);
-      } else {
-        Alert.alert("Not Found", "teacherGraph.json does not exist yet.");
-      }
-    } catch (err) {
-      Alert.alert("Error", "Could not read teacher graph: " + err.message);
-    }
-  };
-  return (
-    <View style={styles.container}>
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={{ flex:1, padding:20 }}>
-          <ScrollView>
-            <Text style={{ fontSize:12 }}>{teacherGraphContent}</Text>
-          </ScrollView>
-          <Button title="Close" onPress={() => setModalVisible(false)} />
-        </View>
-      </Modal>
-      {!mode ? (
-        // Mode Selection Screen
-        <View style={styles.homeContainer}>
-          <Text style={styles.titleText}>Select Mode</Text>
-          <Button title="Student Mode" onPress={() => setMode("student")} />
-          <View style={styles.buttonSpacing} />
-          <Button title="Teacher Mode" onPress={() => setMode("teacher")} />
-        </View>
-      )  : (
-        // Game Screen
+return (
+  <View style={styles.container}>
+    <Modal
+      visible={modalVisible}
+      animationType="slide"
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <View style={{ flex: 1, padding: 20 }}>
+        <ScrollView>
+          <Text style={{ fontSize: 12 }}>{teacherGraphContent}</Text>
+        </ScrollView>
+        <Button title="Close" onPress={() => setModalVisible(false)} />
+      </View>
+    </Modal>
+    {!mode ? (
+      // Mode Selection Screen
+      <View style={styles.homeContainer}>
+        <Text style={styles.titleText}>Select Mode</Text>
+        <Button title="Student Mode" onPress={() => setMode("student")} />
+        <View style={styles.buttonSpacing} />
+        <Button title="Teacher Mode" onPress={() => setMode("teacher")} />
+      </View>
+    ) : mode === "teacher" ? (
+      // Teacher Mode Screen: Toggle between normal teacher controls and quiz management
+      showTeacherQuizManager ? (
+        <TeacherQuizScreen
+          currentGraph={{ nodes, edges, startNode, endNode }}
+          onAssignQuiz={handleAssignQuiz}
+          onUpdateGraph={(graph) => {
+            setNodes(graph.nodes);
+            setEdges(graph.edges);
+            setStartNode(graph.startNode);
+            setEndNode(graph.endNode);
+          }}
+        />
+      ) : (
         <>
+         {!assignedQuiz && (
+            <View style={styles.playOptions}>
+              <Button title="Scan Quiz QR Code" onPress={() => setShowQRScanner(true)} />
+              <Button title="Free Play" onPress={() => { setAssignedQuiz(null); loadLevel(currentLevel); }} />
+            </View>
+          )}
+          {showQRScanner && (
+            <QRScannerScreen 
+              onScanComplete={handleQRScan}
+              onCancel={() => setShowQRScanner(false)}
+            />
+          )}
+          {/* Normal Teacher Controls (editing weights, adjustments, etc.) */}
           <Svg width="400" height="300" style={styles.gameContainer}>
-          {edges.map((edge, index) => {
-  const startNodeObj = nodes.find((n) => n.id === edge.from);
-  const endNodeObj = nodes.find((n) => n.id === edge.to);
-  
-  const strokeColor = (cycleEdges || []).some(
-    (ce) => ce.from === edge.from && ce.to === edge.to
-  )
-    ? "red"
-    : isEdgeSelected(edge.from, edge.to)
-    ? "green"
-    : "yellow";
-  
-  // Calculate the angle in radians and degrees from start to end
-  const angleRad = Math.atan2(
-    endNodeObj.y - startNodeObj.y,
-    endNodeObj.x - startNodeObj.x
-  );
-  const angleDeg = (angleRad * 180) / Math.PI;
-  
-  // Positioning: previous code used the arrow tip as reference.
-  // Now, we use the midpoint so that arrow with tail is centered.
-  const midX = (startNodeObj.x + endNodeObj.x) / 2;
-  const midY = (startNodeObj.y + endNodeObj.y) / 2;
-  
-  return (
-    <React.Fragment key={index}>
-      <Line
-        x1={startNodeObj.x}
-        y1={startNodeObj.y}
-        x2={endNodeObj.x}
-        y2={endNodeObj.y}
-        stroke={strokeColor}
-        strokeWidth={strokeColor === "green" ? "3" : "2"}
-      />
-      <SvgText
-        x={midX}
-        y={midY -13}
-        fill="black"
-        fontSize="18"
-        textAnchor="middle"
-        fontWeight="bold"
-      >
-        {edge.weight}
-      </SvgText>
-      {/* Draw a custom arrow with tail, centered at the edge midpoint */}
-      <Polygon 
-        // The points below draw an arrow with a tail.
-        // The tip is at (10,0); the shape extends leftward (negative x).
-        points="10,0 0,-5 0,-2 -15,-2 -15,2 0,2 0,5"
-        fill="silver"
-        transform={`translate(${midX},${midY}) rotate(${angleDeg})`}
-      />
-    </React.Fragment>
-  );
-})}
+            {edges.map((edge, index) => {
+              const startNodeObj = nodes.find((n) => n.id === edge.from);
+              const endNodeObj = nodes.find((n) => n.id === edge.to);
+              const strokeColor = (cycleEdges || []).some(
+                (ce) => ce.from === edge.from && ce.to === edge.to
+              )
+                ? "red"
+                : isEdgeSelected(edge.from, edge.to)
+                ? "green"
+                : "yellow";
+              const angleRad = Math.atan2(
+                endNodeObj.y - startNodeObj.y,
+                endNodeObj.x - startNodeObj.x
+              );
+              const angleDeg = (angleRad * 180) / Math.PI;
+              const midX = (startNodeObj.x + endNodeObj.x) / 2;
+              const midY = (startNodeObj.y + endNodeObj.y) / 2;
+              return (
+                <React.Fragment key={index}>
+                  <Line
+                    x1={startNodeObj.x}
+                    y1={startNodeObj.y}
+                    x2={endNodeObj.x}
+                    y2={endNodeObj.y}
+                    stroke={strokeColor}
+                    strokeWidth={strokeColor === "green" ? "3" : "2"}
+                  />
+                  <SvgText
+                    x={midX}
+                    y={midY - 13}
+                    fill="black"
+                    fontSize="18"
+                    textAnchor="middle"
+                    fontWeight="bold"
+                  >
+                    {edge.weight}
+                  </SvgText>
+                  <Polygon
+                    points="10,0 0,-5 0,-2 -15,-2 -15,2 0,2 0,5"
+                    fill="silver"
+                    transform={`translate(${midX},${midY}) rotate(${angleDeg})`}
+                  />
+                </React.Fragment>
+              );
+            })}
             {nodes.map((node) => (
               <Circle
                 key={node.id}
@@ -492,110 +538,182 @@ const Graph = () => {
                 onPress={() => handleNodeClick(node.id)}
               />
             ))}
-            {/* {nodes.map((node) => (
-              <SvgText
-                key={node.id + "-label"}
-                x={node.x}
-                y={node.y + 5}
-                fill="white"
-                fontSize="12"
-                fontWeight="bold"
-              >
-                {node.id}
-              </SvgText>
-            ))} */}
           </Svg>
-          
-          {mode === "teacher" && !gameOver && (
-            <View style={styles.teacherControls}>
-              <TextInput
-                style={styles.inputBox}
-                placeholder="Min Weight"
-                keyboardType="numeric"
-                value={minWeight}
-                onChangeText={(text) => setMinWeight(text)}
-              />
-              <TextInput
-                style={styles.inputBox}
-                placeholder="Max Weight"
-                keyboardType="numeric"
-                value={maxWeight}
-                onChangeText={(text) => setMaxWeight(text)}
-              />
-              {/* Show current path weight */}
-              {/* <Text style={styles.gameMessage}>
-                Current Path Weight: {totalWeight}
-              </Text> */}
-              <Button
-                title="Generate New Weights"
-                onPress={generateRandomEdges}
-              />
-              <Button
-                title={`Switch to ${
-                  weightType === "integer" ? "Real Numbers" : "Integers"
-                }`}
-                onPress={() =>
-                  setWeightType((prev) =>
-                    prev === "integer" ? "real" : "integer"
-                  )
-                }
-              />
-              {hasNegativeCycle && (
-                <Text style={styles.errorText}>
-                  Negative cycle detected! Please fix it before proceeding.
-                </Text>
-              )}
-              <Button
-                title={`Switch to ${
-                  teacherOperation === "sum" ? "Multiplication" : "Sum"
-                }`}
-                onPress={() =>
-                  setTeacherOperation((prev) =>
-                    prev === "sum" ? "multiplication" : "sum"
-                  )
-                }
-              />
-              <Button
-                title="Fix Negative Cycles"
-                onPress={handleNegativeCycleAdjustment}
-              />
-            {/* New buttons for handling teacher graph */}
-    {/* <Button title="Copy Default Graph" onPress={copyDefaultGraph} />
-    <Button title="Save Teacher Graph" onPress={saveTeacherGraphAsJson} />
-    <Button title="Load Graph" onPress={loadGraphFromJson} />
-    <Button title="View Teacher Graph" onPress={viewTeacherGraph} /> */}
-            </View>
-          )}
-
-
-
+          <View style={styles.teacherControls}>
+            <TextInput
+              style={styles.inputBox}
+              placeholder="Min Weight"
+              keyboardType="numeric"
+              value={minWeight}
+              onChangeText={(text) => setMinWeight(text)}
+            />
+            <TextInput
+              style={styles.inputBox}
+              placeholder="Max Weight"
+              keyboardType="numeric"
+              value={maxWeight}
+              onChangeText={(text) => setMaxWeight(text)}
+            />
+            <Button title="Generate New Weights" onPress={generateRandomEdges} />
+            <Button
+              title={`Switch to ${
+                weightType === "integer" ? "Real Numbers" : "Integers"
+              }`}
+              onPress={() =>
+                setWeightType((prev) => (prev === "integer" ? "real" : "integer"))
+              }
+            />
+            {hasNegativeCycle && (
+              <Text style={styles.errorText}>
+                Negative cycle detected! Please fix it before proceeding.
+              </Text>
+            )}
+            <Button
+              title={`Switch to ${
+                teacherOperation === "sum" ? "Multiplication" : "Sum"
+              }`}
+              onPress={() =>
+                setTeacherOperation((prev) =>
+                  prev === "sum" ? "multiplication" : "sum"
+                )
+              }
+            />
+            <Button
+              title="Fix Negative Cycles"
+              onPress={handleNegativeCycleAdjustment}
+            />
+            <Button
+              title="Edit Graph & Manage Quiz"
+              onPress={() => setShowTeacherQuizManager(true)}
+            />
+          </View>
           <Text style={styles.gameMessage}>{message}</Text>
           {gameOver && (
             <View style={styles.gameControls}>
               <Button
-                title={message.includes("Bravo") ? "Next Level" : "Play Again"}
+                title={
+                  message.includes("Bravo") ? "Next Level" : "Play Again"
+                }
                 onPress={playAgainOrNextLevel}
               />
             </View>
           )}
-
-<Text style={styles.gameMessage}>
-                Current Path Weight: {totalWeight}
-              </Text>
-          {/* <View style={styles.button}> */}
+          <Text style={styles.gameMessage}>
+            Current Path Weight: {totalWeight}
+          </Text>
           <Button title="Undo" onPress={undo} />
           <Button title="Check Path" onPress={checkPath} />
           <Button title="Reset Graph" onPress={resetGraph} />
-          
-          {/* </View> */}
         </>
-      )}
-
-      <TouchableOpacity onPress={goHome} style={styles.homeButton}>
-        <Text>Home</Text>
-      </TouchableOpacity>
+      )
+    ) : mode === "student" ? (
+      <>
+    <View style={styles.playOptions}>
+      <Button
+        title="Scan Quiz QR Code"
+        onPress={() => setShowQRScanner(true)}
+      />
     </View>
-  );
-};
+    {showQRScanner && (
+      <QRScannerScreen
+        onScanComplete={handleQRScan}
+        onCancel={() => setShowQRScanner(false)}
+      />
+    )}
+    {/* Rest of the game UI */}
+    <Svg width="400" height="300" style={styles.gameContainer}>
+      {edges.map((edge, index) => {
+        const startNodeObj = nodes.find((n) => n.id === edge.from);
+        const endNodeObj = nodes.find((n) => n.id === edge.to);
+        const strokeColor = (cycleEdges || []).some(
+          (ce) => ce.from === edge.from && ce.to === edge.to
+        )
+          ? "red"
+          : isEdgeSelected(edge.from, edge.to)
+          ? "green"
+          : "yellow";
+        const angleRad = Math.atan2(
+          endNodeObj.y - startNodeObj.y,
+          endNodeObj.x - startNodeObj.x
+        );
+        const angleDeg = (angleRad * 180) / Math.PI;
+        const midX = (startNodeObj.x + endNodeObj.x) / 2;
+        const midY = (startNodeObj.y + endNodeObj.y) / 2;
+        return (
+          <React.Fragment key={index}>
+            <Line
+              x1={startNodeObj.x}
+              y1={startNodeObj.y}
+              x2={endNodeObj.x}
+              y2={endNodeObj.y}
+              stroke={strokeColor}
+              strokeWidth={strokeColor === "green" ? "3" : "2"}
+            />
+            <SvgText
+              x={midX}
+              y={midY - 13}
+              fill="black"
+              fontSize="18"
+              textAnchor="middle"
+              fontWeight="bold"
+            >
+              {edge.weight}
+            </SvgText>
+            <Polygon
+              points="10,0 0,-5 0,-2 -15,-2 -15,2 0,2 0,5"
+              fill="silver"
+              transform={`translate(${midX},${midY}) rotate(${angleDeg})`}
+            />
+          </React.Fragment>
+        );
+      })}
+      {nodes.map((node) => (
+        <Circle
+          key={node.id}
+          cx={node.x}
+          cy={node.y}
+          r={20}
+          stroke="gray"
+          strokeWidth="2"
+          fill={
+            node.id === startNode
+              ? "green"
+              : node.id === endNode
+              ? "red"
+              : "blue"
+          }
+          onPress={() => handleNodeClick(node.id)}
+        />
+      ))}
+    </Svg>
+          <Text style={styles.gameMessage}>{message}</Text>
+          {gameOver && (
+            <View style={styles.gameControls}>
+              <Button
+                title={
+                  message.includes("Bravo") ? "Next Level" : "Play Again"
+                }
+                onPress={playAgainOrNextLevel}
+              />
+            </View>
+          )}
+          <Text style={styles.gameMessage}>
+            Current Path Weight: {totalWeight}
+          </Text>
+          <Button title="Undo" onPress={undo} />
+          <Button title="Check Path" onPress={checkPath} />
+          <Button title="Reset Graph" onPress={resetGraph} />
+          <TouchableOpacity onPress={saveProgress} style={styles.saveButton}>
+        <Text>Save Progress</Text>
+      </TouchableOpacity>
+      </>
+) : null}
 
+    <TouchableOpacity onPress={goHome} style={styles.homeButton}>
+      <Text>Home</Text>
+    </TouchableOpacity>
+    
+  </View>
+);
+}
 export default Graph;

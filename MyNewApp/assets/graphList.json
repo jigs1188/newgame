@@ -1,0 +1,36 @@
+{
+  "graphs": [
+    {
+      "id": 1,
+      "title": "Graph 1",
+      "nodes": [
+        { "id": "A", "x": 50, "y": 50 },
+        { "id": "B", "x": 150, "y": 50 },
+        { "id": "C", "x": 100, "y": 150 }
+      ],
+      "edges": [
+        { "from": "A", "to": "B", "weight": 5 },
+        { "from": "B", "to": "C", "weight": 10 },
+        { "from": "C", "to": "A", "weight": 15 }
+      ],
+      "startNode": "A",
+      "endNode": "C"
+    },
+    {
+      "id": 2,
+      "title": "Graph 2",
+      "nodes": [
+        { "id": "D", "x": 50, "y": 50 },
+        { "id": "E", "x": 150, "y": 50 },
+        { "id": "F", "x": 100, "y": 150 }
+      ],
+      "edges": [
+        { "from": "D", "to": "E", "weight": 3 },
+        { "from": "E", "to": "F", "weight": 7 },
+        { "from": "F", "to": "D", "weight": 2 }
+      ],
+      "startNode": "D",
+      "endNode": "F"
+    }
+  ]
+}
