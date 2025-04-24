@@ -1,94 +1,26 @@
 {
   "project_info": {
-    "project_number": "790039352621",
-    "project_id": "shortestpathgame",
-    "storage_bucket": "shortestpathgame.firebasestorage.app"
+    "project_number": "55371272524",
+    "project_id": "game-82f0a",
+    "storage_bucket": "game-82f0a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:790039352621:android:dab860f14d3cb96b472fa4",
-        "android_client_info": {
-          "package_name": "com.anonymous.MyApp"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "790039352621-iifamc3jsdcbs3s53ckioi3o3bfetmnk.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCudBqo3Zx8WtnZQn2B3c7WalhZvSg_kvc"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "790039352621-iifamc3jsdcbs3s53ckioi3o3bfetmnk.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:790039352621:android:2682a40cb895331d472fa4",
-        "android_client_info": {
-          "package_name": "com.jigs1188.MyApp"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "790039352621-iifamc3jsdcbs3s53ckioi3o3bfetmnk.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCudBqo3Zx8WtnZQn2B3c7WalhZvSg_kvc"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "790039352621-iifamc3jsdcbs3s53ckioi3o3bfetmnk.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:790039352621:android:69d9fa4f00cd40a3472fa4",
+        "mobilesdk_app_id": "1:55371272524:android:255f56ba05945308213fe9",
         "android_client_info": {
           "package_name": "com.jigs1188.MyNewApp"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "790039352621-iifamc3jsdcbs3s53ckioi3o3bfetmnk.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCudBqo3Zx8WtnZQn2B3c7WalhZvSg_kvc"
+          "current_key": "AIzaSyBtSbcCPStBgtsLxOHlJq6sonnGKQWJkZY"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "790039352621-iifamc3jsdcbs3s53ckioi3o3bfetmnk.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

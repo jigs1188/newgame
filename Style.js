@@ -88,5 +88,17 @@ export const styles = StyleSheet.create({
     
 
 
-  }
+  },// Add these to your existing styles
+modeSwitcher: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 10,
+  backgroundColor: '#f0f0f0',
+  marginBottom: 10,
+},
+modeText: {
+  fontSize: 16,
+  fontWeight: 'bold',
+},
 });

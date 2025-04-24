@@ -1,86 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import * as ExpoCamera from 'expo-camera';
-const { Camera } = ExpoCamera;
+import { View, Text, StyleSheet, Alert, Modal } from 'react-native';
+import { CameraView } from 'expo-camera';
+import Overlay from './Overlay';
 
 const QRScannerScreen = ({ onScanComplete, onCancel }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
+    // (async () => {
+    //   const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission( 'granted');
+    // })();
   }, []);
 
-  // Remove check for !Camera—if the import isn’t working, this code won’t mount.
-  if (hasPermission === null) {
-    return <Text style={styles.message}>Requesting camera permission...</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text style={styles.message}>No access to camera</Text>;
-  }
-
   const handleBarCodeScanned = ({ type, data }) => {
-    setScanned(true);
-    onScanComplete?.(data);
+    // if (!scanned) {
+    //   setScanned(true);
+      console.log('Scanned data:', data);
+      onScanComplete?.(data);
+    // }
   };
 
-  return (
-    <View style={styles.container}>
-      <Camera 
-        style={styles.camera}
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-      />
-      <View style={styles.overlay}>
-        <Text style={styles.instruction}>Scan the Quiz QR Code</Text>
-        <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-        {scanned && (
-          <TouchableOpacity onPress={() => setScanned(false)} style={styles.rescanButton}>
-            <Text style={styles.rescanText}>Scan Again</Text>
-          </TouchableOpacity>
-        )}
+  if (hasPermission === null) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.message}>Requesting camera permission...</Text>
       </View>
-    </View>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.message}>No access to camera</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Modal
+      visible={true}
+      animationType="slide"
+      onRequestClose={onCancel}
+    >
+      <View style={styles.container}>
+        <CameraView
+          style={styles.camera}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barCodeTypes: ['qr'],
+            isReadable: true,
+          }}
+          focusDepth={1}
+          zoom={0}
+          ratio="16:9"
+        >
+          <Overlay />
+        </CameraView>
+      </View>
+    </Modal>
   );
 };
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  camera: { flex: 1 },
-  overlay: {
-    position: 'absolute',
-    bottom: 40,
-    alignSelf: 'center',
+  container: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  camera: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  instruction: {
-    fontSize: 18,
+  centered: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  message: {
     color: 'white',
-    marginBottom: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 8,
-    borderRadius: 4,
+    fontSize: 16,
   },
-  cancelButton: {
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  cancelText: { fontSize: 18, color: 'blue' },
-  rescanButton: {
-    marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  rescanText: { fontSize: 18, color: 'blue' },
-  message: { flex: 1, alignSelf: 'center', justifyContent: 'center', fontSize: 18, marginTop: 40 },
 });
 
 export default QRScannerScreen;

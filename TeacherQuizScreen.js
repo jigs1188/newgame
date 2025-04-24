@@ -311,7 +311,7 @@ const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
     );
     setQuizQuestions(newQuestions);
   };
-   
+     
 
   // ----- Quiz Save Function -----
   const handleSaveQuiz = async () => {
