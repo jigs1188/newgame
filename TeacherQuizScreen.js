@@ -1,12 +1,13 @@
 //// filepath: c:\Users\LENOVO\Desktop\btp\MyNewApp\TeacherQuizScreen.js
 import React, { useState, useEffect } from "react";
 import { Platform, View, Text, Button, FlatList, TouchableOpacity, Alert, TextInput, StyleSheet, ScrollView } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Svg, { Circle, Line, Text as SvgText, Polygon } from "react-native-svg";
 import QRCode from "react-native-qrcode-svg";
 import * as FileSystem from "expo-file-system";
 import graphList from "./assets/graphList.json";
 import { calculateOptimalPath } from "./Algorithms";
-import { loadSavedQuizzes, saveQuizzes } from "./storage"; // Assuming you have a storage.js file for saving/loading quizzes
+import { loadQuizzes, saveQuizzes } from "./storage";
 
 // ----- Storage Helpers -----
 // Native writable file path
@@ -39,19 +40,28 @@ const saveQuizzesNative = async (quizzesData) => {
   await FileSystem.writeAsStringAsync(savedQuizzesPath, JSON.stringify(quizzesData, null, 2));
 };
 
-// Web load/save using localStorage
+// Web load/save using AsyncStorage (works on all platforms)
 const loadSavedQuizzesWeb = async () => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : { quizzes: [] };
+    if (Platform.OS === 'web') {
+      const data = global.localStorage?.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : { quizzes: [] };
+    } else {
+      const data = await AsyncStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : { quizzes: [] };
+    }
   } catch (error) {
-    console.log("No saved quizzes (web) yet.");
+    console.log("No saved quizzes yet.", error);
     return { quizzes: [] };
   }
 };
 
 const saveQuizzesWeb = async (quizzesData) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(quizzesData, null, 2));
+  if (Platform.OS === 'web') {
+    global.localStorage?.setItem(STORAGE_KEY, JSON.stringify(quizzesData, null, 2));
+  } else {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(quizzesData, null, 2));
+  }
 };
 
 const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
