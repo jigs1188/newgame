@@ -43,7 +43,6 @@ const Graph = () => {
   const [teacherOperation, setTeacherOperation] = useState("sum"); // 'sum' | 'multiplication'
   const [weightType, setWeightType] = useState("integer");
 
-  const [teacherGraphContent, setTeacherGraphContent] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [quizQuestionIndex, setQuizQuestionIndex] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
@@ -86,6 +85,7 @@ const Graph = () => {
     } else {
       loadLevel(currentLevel);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignedQuiz, currentLevel]);
 
   useEffect(() => {
@@ -139,6 +139,7 @@ const Graph = () => {
     } catch (error) {
       console.log("Error loading progress:", error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveProgress = async () => {
@@ -193,23 +194,6 @@ const Graph = () => {
       setAssignedQuiz(null);
       loadLevel(currentLevel);
     }
-  };
-
-  const handleModeToggle = (newMode) => {
-    setMode(newMode);
-    if (newMode === "student") {
-      setShowQRScanner(false);
-      initializeGraph();
-    }
-  };
-
-  const handleQuizAssigned = (quiz) => {
-    setAssignedQuiz(quiz);
-    saveProgress();
-    Alert.alert(
-      "Quiz Assigned",
-      "Students can now scan the QR code to access this quiz"
-    );
   };
 
   useEffect(() => {
@@ -373,28 +357,6 @@ const Graph = () => {
       setGameOver(true);
     }
   };
-  // Add this function in App.js
-  const handleQuizCompletion = () => {
-    if (assignedQuiz) {
-      Alert.alert(
-        "Quiz Completed",
-        `Your final score: ${totalWeight}\nOptimal path weight: ${optimalPathWeight}`,
-        [
-          {
-            text: "Try Again",
-            onPress: () => loadQuizGraph(assignedQuiz),
-          },
-          {
-            text: "Exit Quiz",
-            onPress: () => {
-              setAssignedQuiz(null);
-              loadLevel(currentLevel);
-            },
-          },
-        ]
-      );
-    }
-  };
   // Update playAgainOrNextLevel for quiz mode
   const playAgainOrNextLevel = () => {
     if (assignedQuiz) {
@@ -543,7 +505,7 @@ const Graph = () => {
       >
         <View style={{ flex: 1, padding: 20 }}>
           <ScrollView>
-            <Text style={{ fontSize: 12 }}>{teacherGraphContent}</Text>
+            <Text style={{ fontSize: 12 }}>Graph Editor Content</Text>
           </ScrollView>
           <Button title="Close" onPress={() => setModalVisible(false)} />
         </View>

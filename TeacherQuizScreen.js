@@ -7,7 +7,6 @@ import QRCode from "react-native-qrcode-svg";
 import * as FileSystem from "expo-file-system";
 import graphList from "./assets/graphList.json";
 import { calculateOptimalPath } from "./Algorithms";
-import { loadQuizzes, saveQuizzes } from "./storage";
 
 // ----- Storage Helpers -----
 // Native writable file path
@@ -31,7 +30,7 @@ const loadSavedQuizzesNative = async () => {
     const content = await FileSystem.readAsStringAsync(savedQuizzesPath);
     return JSON.parse(content);
   } catch (error) {
-    console.log("No saved quizzes (native) yet.");
+    console.log("No saved quizzes (native) yet.", error);
     return { quizzes: [] };
   }
 };
@@ -173,6 +172,7 @@ const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
       setSavedQuizzes(updatedQuizzes);
       Alert.alert("Success", "Quiz removed successfully");
     } catch (error) {
+      console.error("Failed to remove quiz:", error);
       Alert.alert("Error", "Failed to remove quiz");
     }
   };
@@ -193,23 +193,6 @@ const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
     const updatedQuestions = quizQuestions.filter((_, i) => i !== index)
       .map((q, i) => ({ ...q, questionNumber: i + 1 })); // renumber
     setQuizQuestions(updatedQuestions);
-  };
-
-  // Save the currently edited graph (question) into quizQuestions array
-  const updateCurrentQuestion = () => {
-    // Update the current question in quizQuestions = current graph object
-    const updatedQuestion = { questionNumber: 1, operation, graphData: { nodes, edges, startNode, endNode } };
-    // If editing a specific question, update that one
-    if (editingQuizId) {
-      // For simplicity we update the first question; you might add UI to choose which question to update.
-      const updatedQuestions = quizQuestions.map((q, i) => i === 0 ? updatedQuestion : q);
-      setQuizQuestions(updatedQuestions);
-    } else {
-      // Otherwise, update the last added question
-      const updatedQuestions = [...quizQuestions];
-      updatedQuestions[updatedQuestions.length - 1] = updatedQuestion;
-      setQuizQuestions(updatedQuestions);
-    }
   };
 
   // ----- Graph Related Functions (unchanged) -----

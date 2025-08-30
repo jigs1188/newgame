@@ -57,11 +57,26 @@ npm run lint
 
 ## Configuration
 
-Firebase
-- Update firebaseConfig.js with your Firebase project configuration (apiKey, authDomain, projectId, etc.).
-- Do not commit secrets in public forks. Consider using environment variables or app config files if you later adopt a secure config strategy.
+### Firebase Setup
+The app now uses environment variables for Firebase configuration to improve security:
 
-Permissions
+1. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Update `.env` with your Firebase project configuration:
+   ```
+   EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   # ... other config values
+   ```
+
+3. **Never commit the `.env` file** - it's already in `.gitignore`
+
+For development without `.env`, the app will use fallback values, but you should set up proper environment variables for production.
+
+### Permissions
 - Camera and barcode scanning require user permissions. Ensure they are granted on your device/emulator.
 
 ## Project Structure (key files)

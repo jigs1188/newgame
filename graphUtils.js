@@ -23,7 +23,7 @@ export const saveQuizGraphToFile = async (quizGraph) => {
       const content = await FileSystem.readAsStringAsync(savedQuizzesPath);
       quizzes = JSON.parse(content);
     } catch (error) {
-      console.log("No quizzes file yet; creating one.");
+      console.log("No quizzes file yet; creating one.", error);
     }
     quizzes.quizzes.push(quizGraph);
     await FileSystem.writeAsStringAsync(savedQuizzesPath, JSON.stringify(quizzes, null, 2));
