@@ -37,6 +37,7 @@ export const styles = StyleSheet.create({
   },
   buttonSpacing: {
     marginVertical: 10,
+    margin: 10,
   },
   teacherControls: {
     flexDirection: 'column',
@@ -52,9 +53,6 @@ export const styles = StyleSheet.create({
   },
   gameMessage: {
     marginTop: 10,
-  },
-  buttonSpacing: {
-    margin: 10,
   },
   gameControls: {
     marginVertical: 20,

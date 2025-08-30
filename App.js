@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // <-- Combine imports
+import React, { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -7,19 +7,13 @@ import {
   Alert,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
 } from "react-native";
 import Svg, {
   Circle,
   Line,
   Text as SvgText,
-  Defs,
-  Marker,
-  Path,
-  Polyline,
   Polygon,
 } from "react-native-svg";
-import QRCode from "react-native-qrcode-svg";
 import graphData from "./assets/graph.json";
 import { calculateOptimalPath } from "./Algorithms";
 import { styles } from "./Style";
@@ -46,7 +40,6 @@ const Graph = () => {
   const [mode, setMode] = useState(""); // '' | 'student' | 'teacher'
   const [cycleEdges, setCycleEdges] = useState([]); // Initialize as empty array
   const [hasNegativeCycle, setHasNegativeCycle] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [teacherOperation, setTeacherOperation] = useState("sum"); // 'sum' | 'multiplication'
   const [weightType, setWeightType] = useState("integer");
 
@@ -62,12 +55,8 @@ const Graph = () => {
 
   // Quiz state
   const [assignedQuiz, setAssignedQuiz] = useState(null);
-  // To decide whether to show QR scanner in student mode
-  const [isQuizScanned, setIsQuizScanned] = useState(false);
   // To toggle teacher quiz management UI
   const [showTeacherQuizManager, setShowTeacherQuizManager] = useState(false);
-  // Quiz-related states
-  // const [assignedQuiz, setAssignedQuiz] = useState(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [gameProgress, setGameProgress] = useState({
     level: 0,
@@ -78,26 +67,26 @@ const Graph = () => {
   useEffect(() => {
     loadSavedProgress();
     initializeGraph();
-  }, []);
+  }, [loadSavedProgress, initializeGraph]);
   useEffect(() => {
     if (assignedQuiz && !quizFinished) {
       setQuestionTimer(0);
-      if (timerInterval) clearInterval(timerInterval);
-      const interval = setInterval(() => {
+      if (timerInterval) global.clearInterval(timerInterval);
+      const interval = global.setInterval(() => {
         setQuestionTimer((prev) => prev + 1);
       }, 1000);
       setTimerInterval(interval);
-      return () => clearInterval(interval);
+      return () => global.clearInterval(interval);
     }
-  }, [quizQuestionIndex, assignedQuiz, quizFinished]);
+  }, [quizQuestionIndex, assignedQuiz, quizFinished, timerInterval]);
 
-  const initializeGraph = () => {
+  const initializeGraph = useCallback(() => {
     if (assignedQuiz) {
       loadQuizGraph(assignedQuiz);
     } else {
       loadLevel(currentLevel);
     }
-  };
+  }, [assignedQuiz, currentLevel]);
 
   useEffect(() => {
     AsyncStorage.getItem("quizProgress").then((data) => {
@@ -139,7 +128,7 @@ const Graph = () => {
     });
   };
 
-  const loadSavedProgress = async () => {
+  const loadSavedProgress = useCallback(async () => {
     try {
       const savedProgress = await AsyncStorage.getItem("gameProgress");
       if (savedProgress) {
@@ -150,7 +139,7 @@ const Graph = () => {
     } catch (error) {
       console.log("Error loading progress:", error);
     }
-  };
+  }, []);
 
   const saveProgress = async () => {
     try {

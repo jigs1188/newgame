@@ -33,7 +33,7 @@ const QRScannerScreen = ({ onScanComplete, onCancel }) => {
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaType.Image,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 1,
         base64: false,
       });
@@ -45,7 +45,8 @@ const QRScannerScreen = ({ onScanComplete, onCancel }) => {
           Alert.alert('Not supported', 'QR scan from gallery is not supported on this platform.');
         }
       }
-    } catch (e) {
+    } catch (error) {
+      console.error('QR scanning error:', error);
       Alert.alert('Error', 'Failed to scan QR from image.');
     }
     setLoading(false);
