@@ -1,50 +1,105 @@
-# Welcome to your Expo app 👋
+# newgame
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An Expo + React Native mobile app featuring quiz flows and QR code scanning. Built with React Navigation, Redux Toolkit, and Firebase.
 
-## Get started
+## Highlights
+- QR scanning and camera support (expo-camera, expo-barcode-scanner)
+- Quiz screens and teacher-focused flows
+- Global state with @reduxjs/toolkit
+- Navigation with @react-navigation (stack + bottom tabs)
+- Firebase client integration
+- Expo Router for file-based routing
+- Async storage for local persistence
 
-1. Install dependencies
+## Tech Stack
+- Expo SDK 52, React Native 0.76, React 18
+- React Navigation 7, Expo Router 4
+- Redux Toolkit, AsyncStorage
+- Firebase JS SDK
+- Reanimated, Gesture Handler, Safe Area Context, Screens
+- QR libraries: react-native-qrcode-scanner, react-native-qrcode-svg, jsqr
 
-   ```bash
-   npm install
-   ```
+## Getting Started
 
-2. Start the app
+Prerequisites
+- Node.js 18+ and npm 9+ (or yarn/pnpm)
+- Android Studio or Xcode (for device simulators)
+- An Expo account if you plan to use EAS builds
 
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+Install
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Run (local development)
+```bash
+# Start the Expo dev server
+npx expo start
 
-## Learn more
+# Or use package scripts
+npm run android   # run on Android device/emulator
+npm run ios       # run on iOS simulator (macOS only)
+npm run web       # run in the browser
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Build (native)
+```bash
+# Local prebuild + native run
+npm run android
+npm run ios
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Test and Lint
+```bash
+npm test   # uses jest-expo
+npm run lint
+```
 
-## Join the community
+## Configuration
 
-Join our community of developers creating universal apps.
+Firebase
+- Update firebaseConfig.js with your Firebase project configuration (apiKey, authDomain, projectId, etc.).
+- Do not commit secrets in public forks. Consider using environment variables or app config files if you later adopt a secure config strategy.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Permissions
+- Camera and barcode scanning require user permissions. Ensure they are granted on your device/emulator.
+
+## Project Structure (key files)
+```
+.
+├─ App.js                     # app entry / navigation wiring
+├─ index.js                   # Expo entry
+├─ Algorithms.js              # algorithms/utilities
+├─ TeacherQuizScreen.js       # quiz flow for teachers
+├─ QRScannerScreen.js         # QR scanning feature
+├─ Overlay.js                 # UI overlay components
+├─ Style.js                   # shared styles
+├─ firebaseConfig.js          # Firebase client config
+├─ graphUtils.js              # graph helpers
+├─ storage.js                 # AsyncStorage helpers
+├─ app.json, eas.json         # Expo/EAS configuration
+├─ android/                   # native Android (Kotlin present)
+├─ assets/                    # images/fonts
+├─ auth/                      # authentication-related code
+└─ screens/                   # additional screens
+```
+
+## Scripts (package.json)
+- start: expo start
+- android: expo run:android
+- ios: expo run:ios
+- web: expo start --web
+- test: jest --watchAll
+- lint: expo lint
+
+## Troubleshooting
+- Camera/QR not working: Check app permissions in device settings.
+- Metro bundler not detecting changes: Stop dev server, clear cache (Ctrl+C, then restart).
+- iOS build issues: Open the iOS project in Xcode after prebuild, ensure signing is configured.
+
+## License
+No license specified. If you intend open-source distribution, add a LICENSE file (e.g., MIT).
+
+## Author
+- Jignesh Parmar (jigs1188)
+- Email: parmarjigs1188@gmail.com
