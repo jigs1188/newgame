@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -43,7 +43,7 @@ const Graph = () => {
   const [teacherOperation, setTeacherOperation] = useState("sum"); // 'sum' | 'multiplication'
   const [weightType, setWeightType] = useState("integer");
 
-  const [teacherGraphContent, setTeacherGraphContent] = useState(null);
+  const [teacherGraphContent] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [quizQuestionIndex, setQuizQuestionIndex] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
@@ -65,9 +65,30 @@ const Graph = () => {
   });
 
   useEffect(() => {
-    loadSavedProgress();
-    initializeGraph();
-  }, [loadSavedProgress, initializeGraph]);
+    const loadSavedProgressLocal = async () => {
+      try {
+        const savedProgress = await AsyncStorage.getItem("gameProgress");
+        if (savedProgress) {
+          const progress = JSON.parse(savedProgress);
+          setGameProgress(progress);
+          if (progress.currentGraph) loadQuizGraph(progress.currentGraph);
+        }
+      } catch (error) {
+        console.log("Error loading progress:", error);
+      }
+    };
+
+    const initializeGraphLocal = () => {
+      if (assignedQuiz) {
+        loadQuizGraph(assignedQuiz);
+      } else {
+        loadLevel(currentLevel);
+      }
+    };
+
+    loadSavedProgressLocal();
+    initializeGraphLocal();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (assignedQuiz && !quizFinished) {
       setQuestionTimer(0);
@@ -80,13 +101,6 @@ const Graph = () => {
     }
   }, [quizQuestionIndex, assignedQuiz, quizFinished, timerInterval]);
 
-  const initializeGraph = useCallback(() => {
-    if (assignedQuiz) {
-      loadQuizGraph(assignedQuiz);
-    } else {
-      loadLevel(currentLevel);
-    }
-  }, [assignedQuiz, currentLevel]);
 
   useEffect(() => {
     AsyncStorage.getItem("quizProgress").then((data) => {
@@ -128,18 +142,7 @@ const Graph = () => {
     });
   };
 
-  const loadSavedProgress = useCallback(async () => {
-    try {
-      const savedProgress = await AsyncStorage.getItem("gameProgress");
-      if (savedProgress) {
-        const progress = JSON.parse(savedProgress);
-        setGameProgress(progress);
-        if (progress.currentGraph) loadQuizGraph(progress.currentGraph);
-      }
-    } catch (error) {
-      console.log("Error loading progress:", error);
-    }
-  }, []);
+
 
   const saveProgress = async () => {
     try {
@@ -195,22 +198,22 @@ const Graph = () => {
     }
   };
 
-  const handleModeToggle = (newMode) => {
-    setMode(newMode);
-    if (newMode === "student") {
-      setShowQRScanner(false);
-      initializeGraph();
-    }
-  };
+  // const handleModeToggle = (newMode) => {
+  //   setMode(newMode);
+  //   if (newMode === "student") {
+  //     setShowQRScanner(false);
+  //     initializeGraph();
+  //   }
+  // };
 
-  const handleQuizAssigned = (quiz) => {
-    setAssignedQuiz(quiz);
-    saveProgress();
-    Alert.alert(
-      "Quiz Assigned",
-      "Students can now scan the QR code to access this quiz"
-    );
-  };
+  // const handleQuizAssigned = (quiz) => {
+  //   setAssignedQuiz(quiz);
+  //   saveProgress();
+  //   Alert.alert(
+  //     "Quiz Assigned",
+  //     "Students can now scan the QR code to access this quiz"
+  //   );
+  // };
 
   useEffect(() => {
     if (!assignedQuiz) loadLevel(0);
@@ -374,27 +377,27 @@ const Graph = () => {
     }
   };
   // Add this function in App.js
-  const handleQuizCompletion = () => {
-    if (assignedQuiz) {
-      Alert.alert(
-        "Quiz Completed",
-        `Your final score: ${totalWeight}\nOptimal path weight: ${optimalPathWeight}`,
-        [
-          {
-            text: "Try Again",
-            onPress: () => loadQuizGraph(assignedQuiz),
-          },
-          {
-            text: "Exit Quiz",
-            onPress: () => {
-              setAssignedQuiz(null);
-              loadLevel(currentLevel);
-            },
-          },
-        ]
-      );
-    }
-  };
+  // const handleQuizCompletion = () => {
+  //   if (assignedQuiz) {
+  //     Alert.alert(
+  //       "Quiz Completed",
+  //       `Your final score: ${totalWeight}\nOptimal path weight: ${optimalPathWeight}`,
+  //       [
+  //         {
+  //           text: "Try Again",
+  //           onPress: () => loadQuizGraph(assignedQuiz),
+  //         },
+  //         {
+  //           text: "Exit Quiz",
+  //           onPress: () => {
+  //             setAssignedQuiz(null);
+  //             loadLevel(currentLevel);
+  //           },
+  //         },
+  //       ]
+  //     );
+  //   }
+  // };
   // Update playAgainOrNextLevel for quiz mode
   const playAgainOrNextLevel = () => {
     if (assignedQuiz) {

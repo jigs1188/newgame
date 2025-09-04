@@ -22,7 +22,7 @@ export const saveQuizGraphToFile = async (quizGraph) => {
     try {
       const content = await FileSystem.readAsStringAsync(savedQuizzesPath);
       quizzes = JSON.parse(content);
-    } catch (error) {
+    } catch (_error) {
       console.log("No quizzes file yet; creating one.");
     }
     quizzes.quizzes.push(quizGraph);

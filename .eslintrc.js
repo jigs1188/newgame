@@ -2,4 +2,12 @@
 module.exports = {
   extends: 'expo',
   ignorePatterns: ['/dist/*'],
+  overrides: [
+    {
+      files: ['**/__tests__/**/*', '**/*.test.*', '**/*.spec.*'],
+      env: {
+        jest: true,
+      },
+    },
+  ],
 };

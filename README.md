@@ -98,7 +98,7 @@ Permissions
 - iOS build issues: Open the iOS project in Xcode after prebuild, ensure signing is configured.
 
 ## License
-No license specified. If you intend open-source distribution, add a LICENSE file (e.g., MIT).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 - Jignesh Parmar (jigs1188)

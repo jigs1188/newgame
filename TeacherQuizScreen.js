@@ -7,7 +7,6 @@ import QRCode from "react-native-qrcode-svg";
 import * as FileSystem from "expo-file-system";
 import graphList from "./assets/graphList.json";
 import { calculateOptimalPath } from "./Algorithms";
-import { loadQuizzes, saveQuizzes } from "./storage";
 
 // ----- Storage Helpers -----
 // Native writable file path
@@ -30,7 +29,7 @@ const loadSavedQuizzesNative = async () => {
   try {
     const content = await FileSystem.readAsStringAsync(savedQuizzesPath);
     return JSON.parse(content);
-  } catch (error) {
+  } catch (_error) {
     console.log("No saved quizzes (native) yet.");
     return { quizzes: [] };
   }
@@ -95,7 +94,7 @@ const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
   const [weightType, setWeightType] = useState("integer");
   const [teacherOperation, setTeacherOperation] = useState("sum");
   const [totalWeight, setTotalWeight] = useState(0);
-  const [optimalPathWeight, setOptimalPathWeight] = useState(null);
+  const [, setOptimalPathWeight] = useState(null);
 
   // ----- Effects -----
   useEffect(() => {
@@ -172,7 +171,7 @@ const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
       }
       setSavedQuizzes(updatedQuizzes);
       Alert.alert("Success", "Quiz removed successfully");
-    } catch (error) {
+    } catch (_error) {
       Alert.alert("Error", "Failed to remove quiz");
     }
   };
@@ -196,21 +195,21 @@ const TeacherQuizScreen = ({ currentGraph, onAssignQuiz, onUpdateGraph }) => {
   };
 
   // Save the currently edited graph (question) into quizQuestions array
-  const updateCurrentQuestion = () => {
-    // Update the current question in quizQuestions = current graph object
-    const updatedQuestion = { questionNumber: 1, operation, graphData: { nodes, edges, startNode, endNode } };
-    // If editing a specific question, update that one
-    if (editingQuizId) {
-      // For simplicity we update the first question; you might add UI to choose which question to update.
-      const updatedQuestions = quizQuestions.map((q, i) => i === 0 ? updatedQuestion : q);
-      setQuizQuestions(updatedQuestions);
-    } else {
-      // Otherwise, update the last added question
-      const updatedQuestions = [...quizQuestions];
-      updatedQuestions[updatedQuestions.length - 1] = updatedQuestion;
-      setQuizQuestions(updatedQuestions);
-    }
-  };
+  // const updateCurrentQuestion = () => {
+  //   // Update the current question in quizQuestions = current graph object
+  //   const updatedQuestion = { questionNumber: 1, operation, graphData: { nodes, edges, startNode, endNode } };
+  //   // If editing a specific question, update that one
+  //   if (editingQuizId) {
+  //     // For simplicity we update the first question; you might add UI to choose which question to update.
+  //     const updatedQuestions = quizQuestions.map((q, i) => i === 0 ? updatedQuestion : q);
+  //     setQuizQuestions(updatedQuestions);
+  //   } else {
+  //     // Otherwise, update the last added question
+  //     const updatedQuestions = [...quizQuestions];
+  //     updatedQuestions[updatedQuestions.length - 1] = updatedQuestion;
+  //     setQuizQuestions(updatedQuestions);
+  //   }
+  // };
 
   // ----- Graph Related Functions (unchanged) -----
   const handleSelectGraph = (graph) => {
